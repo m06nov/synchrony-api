@@ -10,10 +10,12 @@ import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -50,7 +52,14 @@ public class ImageController {
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.MULTIPART_FORM_DATA);
 		
-		headers.add("Authorization", "Client-ID "+configuration.getClientid());
+		if(!StringUtils.isEmpty(configuration.getAccessToken())) {
+			headers.add("Token", configuration.getAccessToken());
+		}
+		else {
+			headers.add("Authorization", "Client-ID "+configuration.getClientid());
+		}
+		
+		
 		
 		MultiValueMap<String, Object> requestBody = new LinkedMultiValueMap<>();
 		requestBody.add("image", multipartFile.getResource());
@@ -90,7 +99,12 @@ public class ImageController {
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.MULTIPART_FORM_DATA);
 		
-		headers.add("Authorization", "Client-ID "+configuration.getClientid());
+		if(!StringUtils.isEmpty(configuration.getAccessToken())) {
+			headers.add("Token", configuration.getAccessToken());
+		}
+		else {
+			headers.add("Authorization", "Client-ID "+configuration.getClientid());
+		}
 		HttpEntity<MultiValueMap<String, Object>> requestEntity
 		 = new HttpEntity<>(headers);
 		byte[] forObject = restTemplate.getForObject(imageInfoDTO.getLink(), byte[].class);
@@ -120,8 +134,21 @@ public class ImageController {
 			imageReposotory.deleteById(imageId);
 			
 			String deleteUrl = "https://api.imgur.com/3/image/"+findById.get().getDeletehash();
+			HttpHeaders headers = new HttpHeaders();
+			headers.setContentType(MediaType.MULTIPART_FORM_DATA);
 			
-//			restTemplate.exchange(url, method, requestEntity, responseType)(deleteUrl);
+			if(!StringUtils.isEmpty(configuration.getAccessToken())) {
+				headers.add("Token", configuration.getAccessToken());
+			}
+			else {
+				headers.add("Authorization", "Client-ID "+configuration.getClientid());
+			}
+			HttpEntity<MultiValueMap<String, Object>> requestEntity
+			 = new HttpEntity<>(headers);
+			ResponseEntity<Object> exchange = restTemplate.exchange(deleteUrl, HttpMethod.DELETE, requestEntity, Object.class);
+			if(exchange.getStatusCodeValue() != 200) {
+				return "Error in deleted";
+			}
 		}
 		
 		return "deleted";
